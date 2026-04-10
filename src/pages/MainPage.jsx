@@ -39,7 +39,7 @@ function isPreviewable(name) {
 }
 
 function formatSize(bytes) {
-  if (bytes == null) return 'x';
+  if (bytes == null) return '—';
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / 1024 / 1024).toFixed(1) + ' MB';
@@ -63,7 +63,6 @@ async function getJSZip() {
 async function packBundleAsZip(entry) {
   const JSZip = await getJSZip();
   const zip = new JSZip();
-
   async function addEntry(e, zipPath) {
     if (e.isFile) {
       const blob = await new Promise((resolve, reject) => e.file(resolve, reject));
@@ -81,7 +80,6 @@ async function packBundleAsZip(entry) {
       });
     }
   }
-
   await addEntry(entry, entry.name);
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
   return new File([blob], entry.name + '.zip', { type: 'application/zip' });
@@ -106,6 +104,7 @@ const Icon = ({ name, size = 16 }) => {
     upload:     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>,
     home:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
     chevron:    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
+    check:      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
   };
   return icons[name] ?? icons.other;
 };
@@ -113,19 +112,16 @@ const Icon = ({ name, size = 16 }) => {
 function PreviewModal({ file, filePath, onClose }) {
   const type = getFileType(file.name);
   const url = API + '/preview?path=' + encodeURIComponent(filePath);
-
   return (
     <div className={s.modalOverlay} onClick={onClose}>
       <div className={s.modalBox} onClick={e => e.stopPropagation()}>
         <div className={s.modalHeader}>
           <span className={s.modalTitle}>{file.name}</span>
-          <button className={s.iconBtn} onClick={onClose} aria-label="Zamknij">
-            <Icon name="close" />
-          </button>
+          <button className={s.iconBtn} onClick={onClose} aria-label="Zamknij"><Icon name="close" /></button>
         </div>
         <div className={s.modalBody}>
-          {type === 'image' && <img src={url} alt={file.name} className={s.previewImg} style={{ alignSelf: 'center' }} />}
-          {type === 'video' && <video controls className={s.previewVideo} style={{ alignSelf: 'center' }}><source src={url} /></video>}
+          {type === 'image' && <img src={url} alt={file.name} className={s.previewImg} />}
+          {type === 'video' && <video controls className={s.previewVideo}><source src={url} /></video>}
           {type === 'audio' && <audio controls style={{ width: '100%' }}><source src={url} /></audio>}
           {type === 'pdf'   && <iframe src={url} className={s.previewIframe} title={file.name} />}
           {type === 'text'  && <TextPreview url={url} />}
@@ -136,9 +132,9 @@ function PreviewModal({ file, filePath, onClose }) {
 }
 
 function TextPreview({ url }) {
-  const [text, setText] = useState('Ladowanie...');
+  const [text, setText] = useState('Ładowanie...');
   useEffect(() => {
-    fetch(url).then(r => r.text()).then(setText).catch(() => setText('Nie mozna wczytac pliku.'));
+    fetch(url).then(r => r.text()).then(setText).catch(() => setText('Nie można wczytać pliku.'));
   }, [url]);
   return <pre className={s.previewText}>{text}</pre>;
 }
@@ -148,12 +144,12 @@ function ConfirmModal({ items, onConfirm, onCancel }) {
     <div className={s.modalOverlay} onClick={onCancel}>
       <div className={s.modalBox + ' ' + s.modalBoxSm} onClick={e => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <span className={s.modalTitle}>Potwierdź usuniecie</span>
+          <span className={s.modalTitle}>Potwierdź usunięcie</span>
           <button className={s.iconBtn} onClick={onCancel}><Icon name="close" /></button>
         </div>
         <div className={s.modalFooter}>
           <p className={s.modalText}>
-            Usunąc {items.length === 1 ? '"' + items[0] + '"' : items.length + ' elementow'}? Tej operacji nie mozna cofnąc.
+            Usunąć {items.length === 1 ? '"' + items[0] + '"' : items.length + ' elementów'}? Tej operacji nie można cofnąć.
           </p>
           <div className={s.modalActions}>
             <button className={s.btnSecondary} onClick={onCancel}>Anuluj</button>
@@ -168,10 +164,9 @@ function ConfirmModal({ items, onConfirm, onCancel }) {
 function NewFolderModal({ currentPath, onCreated, onCancel }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
-
   async function handleCreate() {
     const trimmed = name.trim();
-    if (!trimmed) return setError('Podaj nazwe katalogu');
+    if (!trimmed) return setError('Podaj nazwę katalogu');
     if (/[/\\:*?"<>|]/.test(trimmed)) return setError('Niedozwolone znaki w nazwie');
     const relPath = currentPath ? currentPath + '/' + trimmed : trimmed;
     const res = await fetch(API + '/mkdir', {
@@ -180,9 +175,8 @@ function NewFolderModal({ currentPath, onCreated, onCancel }) {
       body: JSON.stringify({ path: relPath }),
     });
     if (res.ok) onCreated();
-    else setError('Nie udalo sie utworzyc katalogu');
+    else setError('Nie udało się utworzyć katalogu');
   }
-
   return (
     <div className={s.modalOverlay} onClick={onCancel}>
       <div className={s.modalBox + ' ' + s.modalBoxXs} onClick={e => e.stopPropagation()}>
@@ -202,7 +196,7 @@ function NewFolderModal({ currentPath, onCreated, onCancel }) {
           {error && <span className={s.errorText}>{error}</span>}
           <div className={s.modalActions}>
             <button className={s.btnSecondary} onClick={onCancel}>Anuluj</button>
-            <button className={s.btnPrimary} onClick={handleCreate}>Utworz</button>
+            <button className={s.btnPrimary} onClick={handleCreate}>Utwórz</button>
           </div>
         </div>
       </div>
@@ -210,6 +204,94 @@ function NewFolderModal({ currentPath, onCreated, onCancel }) {
   );
 }
 
+// ─── Tile component ──────────────────────────────────────────────────────────
+function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, onDownload, onDelete, onDrop }) {
+  const fileType = entry.isDirectory ? 'folder' : getFileType(entry.name);
+  const [tileDragOver, setTileDragOver] = useState(false);
+  const dragCounter = useRef(0);
+
+  function handleDragEnter(e) {
+    if (!entry.isDirectory) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    setTileDragOver(true);
+  }
+  function handleDragLeave(e) {
+    if (!entry.isDirectory) return;
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setTileDragOver(false);
+  }
+  function handleDragOver(e) {
+    if (!entry.isDirectory) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  async function handleDrop(e) {
+    if (!entry.isDirectory) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setTileDragOver(false);
+    onDrop(e, entry.name);
+  }
+
+  return (
+    <div
+      className={`${s.tile} ${isSelected ? s.tileSelected : ''} ${tileDragOver ? s.tileDragOver : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Selection checkbox overlay */}
+      <button
+        className={`${s.tileCheckbox} ${isSelected ? s.tileCheckboxActive : ''}`}
+        onClick={e => { e.stopPropagation(); onSelect(entry.name); }}
+        aria-label={isSelected ? 'Odznacz' : 'Zaznacz'}
+      >
+        {isSelected && <Icon name="check" size={12} />}
+      </button>
+
+      {/* Clickable main area */}
+      <div
+        className={s.tileMain}
+        onClick={() => entry.isDirectory ? onNavigate(entry.name) : null}
+        style={{ cursor: entry.isDirectory ? 'pointer' : 'default' }}
+      >
+        <div className={s.tileIcon} style={{ color: entry.isDirectory ? 'var(--color-gold)' : 'var(--color-text-muted)' }}>
+          <Icon name={fileType} size={36} />
+        </div>
+        <div className={s.tileName} title={entry.name}>
+          {entry.name}
+        </div>
+        <div className={s.tileMeta}>
+          {!entry.isDirectory && <span>{formatSize(entry.size)}</span>}
+          {entry.isDirectory && <span className={s.tileTypeLabel}>Katalog</span>}
+        </div>
+        <div className={s.tileDate}>{formatDate(entry.modified)}</div>
+      </div>
+
+      {/* Action buttons */}
+      <div className={s.tileActions}>
+        {!entry.isDirectory && isPreviewable(entry.name) && (
+          <button className={s.tileBtn} title="Podgląd" onClick={e => { e.stopPropagation(); onPreview({ file: entry, filePath }); }}>
+            <Icon name="eye" size={18} />
+          </button>
+        )}
+        <button className={s.tileBtn} title="Pobierz" onClick={e => { e.stopPropagation(); onDownload(entry.name); }}>
+          <Icon name="download" size={18} />
+        </button>
+        <button className={`${s.tileBtn} ${s.tileBtnDanger}`} title="Usuń" onClick={e => { e.stopPropagation(); onDelete([entry.name]); }}>
+          <Icon name="trash" size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MainPage() {
   const [currentPath, setCurrentPath] = useState('');
   const [entries, setEntries] = useState([]);
@@ -231,7 +313,7 @@ export default function MainPage() {
       const data = await res.json();
       setEntries(Array.isArray(data) ? data : []);
     } catch {
-      showToast('Blad polaczenia z serwerem', 'error');
+      showToast('Błąd połączenia z serwerem', 'error');
       setEntries([]);
     } finally {
       setLoading(false);
@@ -261,14 +343,14 @@ export default function MainPage() {
 
   function selectAll() { setSelected(new Set(entries.map(e => e.name))); }
   function deselectAll() { setSelected(new Set()); }
-
   const allSelected = entries.length > 0 && selected.size === entries.length;
   const noneSelected = selected.size === 0;
 
-  async function uploadFiles(fileList) {
+  // Upload to a specific sub-directory (for tile drop)
+  async function uploadFilesToPath(fileList, targetPath) {
     if (!fileList.length) return;
     const form = new FormData();
-    form.append('path', currentPath);
+    form.append('path', targetPath);
     for (const f of fileList) {
       const relativeName = f.webkitRelativePath || f.name;
       form.append('files', new File([f], relativeName, { type: f.type }));
@@ -276,11 +358,15 @@ export default function MainPage() {
     const res = await fetch(API + '/upload', { method: 'POST', body: form });
     if (res.ok) {
       const { uploaded } = await res.json();
-      showToast('Wgrano ' + uploaded + ' plik' + (uploaded === 1 ? '' : uploaded < 5 ? 'i' : 'ow'));
+      showToast('Wgrano ' + uploaded + ' plik' + (uploaded === 1 ? '' : uploaded < 5 ? 'i' : 'ów'));
       loadDir();
     } else {
-      showToast('Blad podczas uploadu', 'error');
+      showToast('Błąd podczas uploadu', 'error');
     }
+  }
+
+  async function uploadFiles(fileList) {
+    await uploadFilesToPath(fileList, currentPath);
   }
 
   function handleFileInputChange(e) {
@@ -288,6 +374,7 @@ export default function MainPage() {
     e.target.value = '';
   }
 
+  // Global drag-over overlay (outside tiles)
   function handleDragEnter(e) {
     e.preventDefault();
     dragCounter.current++;
@@ -305,14 +392,24 @@ export default function MainPage() {
     dragCounter.current = 0;
     setDragging(false);
     const items = e.dataTransfer.items;
-    if (items && items.length > 0) {
-      const files = await collectFilesPreservingStructure(items);
-      await uploadFiles(files);
-    } else {
-      await uploadFiles(Array.from(e.dataTransfer.files));
-    }
+    const files = items && items.length > 0
+      ? await collectFilesPreservingStructure(items)
+      : Array.from(e.dataTransfer.files);
+    await uploadFiles(files);
   }
-  
+
+  // Drop directly onto a folder tile
+  async function handleTileDrop(e, folderName) {
+    const targetPath = currentPath ? currentPath + '/' + folderName : folderName;
+    dragCounter.current = 0;
+    setDragging(false);
+    const items = e.dataTransfer.items;
+    const files = items && items.length > 0
+      ? await collectFilesPreservingStructure(items)
+      : Array.from(e.dataTransfer.files);
+    await uploadFilesToPath(files, targetPath);
+  }
+
   async function collectFilesPreservingStructure(dataTransferItems) {
     const files = [];
     const bundlesPacked = [];
@@ -336,8 +433,8 @@ export default function MainPage() {
             files.push(new File([zipped], zipPath, { type: 'application/zip' }));
             bundlesPacked.push(entry.name);
           } catch (err) {
-            console.error('Blad pakowania bundle:', err);
-            showToast('Blad pakowania "' + entry.name + '"', 'error');
+            console.error('Błąd pakowania bundle:', err);
+            showToast('Błąd pakowania "' + entry.name + '"', 'error');
           }
         } else {
           const reader = entry.createReader();
@@ -345,9 +442,7 @@ export default function MainPage() {
             const readAll = () =>
               reader.readEntries(async batch => {
                 if (batch.length === 0) return resolve();
-                for (const sub of batch) {
-                  await traverseEntry(sub, relativePath + '/' + sub.name);
-                }
+                for (const sub of batch) await traverseEntry(sub, relativePath + '/' + sub.name);
                 readAll();
               });
             readAll();
@@ -368,7 +463,6 @@ export default function MainPage() {
         : bundlesPacked.length + ' bundlów spakowanych jako ZIP';
       showToast(msg);
     }
-
     return files;
   }
 
@@ -400,7 +494,7 @@ export default function MainPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'download.zip';
+    a.download = 'filer_download.zip';
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -416,10 +510,10 @@ export default function MainPage() {
       body: JSON.stringify({ items: names, basePath: currentPath }),
     });
     if (res.ok) {
-      showToast('Usunieto ' + names.length + ' element' + (names.length === 1 ? '' : 'y'));
+      showToast('Usunięto ' + names.length + ' element' + (names.length === 1 ? '' : 'y'));
       loadDir();
     } else {
-      showToast('Blad podczas usuwania', 'error');
+      showToast('Błąd podczas usuwania', 'error');
     }
   }
 
@@ -438,13 +532,13 @@ export default function MainPage() {
           <div className={s.dropBox}>
             <Icon name="upload" size={48} />
             <p style={{ marginTop: 16, fontSize: 'var(--text-lg)', fontWeight: 600 }}>
-              Upusc pliki lub katalogi tutaj
+              Upuść pliki lub katalogi tutaj
             </p>
             <p className={s.textMuted} style={{ marginTop: 4 }}>
-              Katalogi zostana zachowane w calosci - /{currentPath || 'root'}
+              Wgrywa do: /{currentPath || 'root'}
             </p>
-            <p className={s.textMuted} style={{ marginTop: 4, fontSize: 'var(--text-xs)' }}>
-              Pakiety macOS (.app, .framework...) zostana automatycznie spakowane do ZIP
+            <p className={s.textFaint} style={{ marginTop: 4, fontSize: 'var(--text-xs)' }}>
+              Pakiety macOS (.app, .framework…) zostaną spakowane do ZIP
             </p>
           </div>
         </div>
@@ -469,13 +563,7 @@ export default function MainPage() {
             <Icon name="plus" size={14} />
             Dodaj pliki
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handleFileInputChange}
-          />
+          <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileInputChange} />
         </div>
       </header>
 
@@ -497,13 +585,14 @@ export default function MainPage() {
         ))}
       </div>
 
+      {/* Selection bar */}
       <div className={s.selectionBar}>
         <div className={s.selectionBarLeft}>
           <button className={allSelected ? s.btnPrimary : s.btnSecondary} onClick={selectAll} disabled={entries.length === 0}>
             Zaznacz wszystkie
           </button>
           <button className={s.btnSecondary} onClick={deselectAll} disabled={noneSelected}>
-            Odznacz wszystkie
+            Odznacz
           </button>
           {selectedArr.length > 0 && (
             <span className={s.selectionCount}>
@@ -527,99 +616,46 @@ export default function MainPage() {
         </div>
       </div>
 
-      <div className={s.tableWrapper}>
+      {/* Tile grid */}
+      <div className={s.gridWrapper}>
         {loading ? (
-          <div className={s.emptyState}>
-            <div className={s.skeleton} style={{ width: '100%', height: 40, marginBottom: 8 }} />
-            <div className={s.skeleton} style={{ width: '100%', height: 40, marginBottom: 8 }} />
-            <div className={s.skeleton} style={{ width: '75%', height: 40 }} />
+          <div className={s.tileGrid}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className={s.tileSkeleton}>
+                <div className={`${s.skeleton} ${s.skeletonIcon}`} />
+                <div className={`${s.skeleton} ${s.skeletonText}`} />
+                <div className={`${s.skeleton} ${s.skeletonTextSm}`} />
+              </div>
+            ))}
           </div>
         ) : entries.length === 0 ? (
           <div className={s.emptyState}>
             <div style={{ color: 'var(--color-text-faint)', marginBottom: 12 }}>
-              <Icon name="folder" size={40} />
+              <Icon name="folder" size={48} />
             </div>
-            <p className={s.textMuted}>Ten katalog jest pusty</p>
-            <p className={s.textFaint}>Przeciagnij pliki lub katalogi, albo kliknij "Dodaj pliki"</p>
+            <p style={{ color: 'var(--color-text)', fontWeight: 500, marginBottom: 4 }}>Ten katalog jest pusty</p>
+            <p className={s.textFaint}>Przeciągnij pliki lub katalogi, albo kliknij „Dodaj pliki"</p>
           </div>
         ) : (
-          <table className={s.table}>
-            <thead>
-              <tr className={s.thead}>
-                <th className={s.th} style={{ width: 40 }}>
-                  <input
-                    type="checkbox"
-                    className={s.checkbox}
-                    checked={allSelected}
-                    onChange={allSelected ? deselectAll : selectAll}
-                    aria-label="Zaznacz wszystkie"
-                  />
-                </th>
-                <th className={s.th} style={{ width: 36 }}></th>
-                <th className={s.th} style={{ textAlign: 'left' }}>Nazwa</th>
-                <th className={s.th} style={{ width: 120, textAlign: 'right' }}>Rozmiar</th>
-                <th className={s.th} style={{ width: 180, textAlign: 'right' }}>Zmodyfikowano</th>
-                <th className={s.th} style={{ width: 130, textAlign: 'center' }}>Akcje</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map(entry => {
-                const fileType = entry.isDirectory ? 'folder' : getFileType(entry.name);
-                const filePath = currentPath ? currentPath + '/' + entry.name : entry.name;
-                const isSelected = selected.has(entry.name);
-                return (
-                  <tr
-                    key={entry.name}
-                    className={s.tr + (isSelected ? ' ' + s.trSelected : '')}
-                    onClick={e => {
-                      if (e.target.closest('button') || e.target.type === 'checkbox') return;
-                      if (entry.isDirectory) navigateTo(entry.name);
-                    }}
-                  >
-                    <td className={s.td} onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        className={s.checkbox}
-                        checked={isSelected}
-                        onChange={() => toggleSelect(entry.name)}
-                      />
-                    </td>
-                    <td className={s.td}>
-                      <span style={{ color: entry.isDirectory ? 'var(--color-gold)' : 'var(--color-text-muted)' }}>
-                        <Icon name={fileType} size={18} />
-                      </span>
-                    </td>
-                    <td className={s.td} style={{ cursor: entry.isDirectory ? 'pointer' : 'default', textAlign: 'left' }}>
-                      <span style={{ fontWeight: entry.isDirectory ? 500 : 400, color: entry.isDirectory ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                        {entry.name}
-                      </span>
-                    </td>
-                    <td className={s.td} style={{ textAlign: 'right', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                      {formatSize(entry.size)}
-                    </td>
-                    <td className={s.td} style={{ textAlign: 'right', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 'var(--text-xs)' }}>
-                      {formatDate(entry.modified)}
-                    </td>
-                    <td className={s.td} style={{ textAlign: 'center' }}>
-                      <div className={s.actions}>
-                        {!entry.isDirectory && isPreviewable(entry.name) && (
-                          <button className={s.actionBtn} title="Podglad" onClick={() => setPreview({ file: entry, filePath })}>
-                            <Icon name="eye" size={15} />
-                          </button>
-                        )}
-                        <button className={s.actionBtn} title="Pobierz" onClick={() => downloadItem(entry.name)}>
-                          <Icon name="download" size={15} />
-                        </button>
-                        <button className={s.actionBtn + ' ' + s.actionBtnDanger} title="Usun" onClick={() => requestDelete([entry.name])}>
-                          <Icon name="trash" size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className={s.tileGrid}>
+            {entries.map(entry => {
+              const filePath = currentPath ? currentPath + '/' + entry.name : entry.name;
+              return (
+                <Tile
+                  key={entry.name}
+                  entry={entry}
+                  filePath={filePath}
+                  isSelected={selected.has(entry.name)}
+                  onSelect={toggleSelect}
+                  onNavigate={navigateTo}
+                  onPreview={setPreview}
+                  onDownload={downloadItem}
+                  onDelete={requestDelete}
+                  onDrop={handleTileDrop}
+                />
+              );
+            })}
+          </div>
         )}
       </div>
 
