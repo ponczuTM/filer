@@ -1,0 +1,423 @@
+/* ─── App ─────────────────────────────────────────────────────────────────── */
+.app {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  position: relative;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 56px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.headerLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.headerTitle {
+  font-weight: 700;
+  font-size: var(--text-base);
+  letter-spacing: -0.01em;
+}
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─── Breadcrumbs ─────────────────────────────────────────────────────────── */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0.625rem 1.5rem;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface-2);
+  font-size: var(--text-sm);
+}
+.breadcrumbBtn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 150ms, background 150ms;
+}
+
+/* ─── Selection bar ───────────────────────────────────────────────────────── */
+.selectionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+}
+.selectionBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.selectionBarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.selectionCount {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  padding-left: 4px;
+}
+
+/* ─── Table ───────────────────────────────────────────────────────────────── */
+.tableWrapper {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.thead {
+  border-bottom: 2px solid var(--color-border);
+}
+.th {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.tr {
+  border-bottom: 1px solid var(--color-divider);
+  transition: background 120ms;
+  cursor: default;
+}
+.trSelected {
+  background: var(--color-primary-highlight);
+}
+.td {
+  padding: 0.6rem 0.75rem;
+  vertical-align: middle;
+}
+
+/* ─── Actions ─────────────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+.actionBtn {
+  background: none;
+  border: none;
+  padding: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  transition: background 120ms, color 120ms;
+}
+.actionBtnDanger {
+  color: var(--color-error);
+}
+
+/* ─── Checkbox ────────────────────────────────────────────────────────────── */
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+/* ─── Skeleton ────────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-offset) 25%,
+    var(--color-surface-dynamic) 50%,
+    var(--color-surface-offset) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ─── Drop overlay ────────────────────────────────────────────────────────── */
+.dropOverlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(from var(--color-primary) l c h / 0.12);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.dropBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 2px dashed var(--color-primary);
+  border-radius: 16px;
+  padding: 3rem 4rem;
+  color: var(--color-primary);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ─── Modals ──────────────────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(9.693% 0.00001 271.152 / 0.687);
+  backdrop-filter: blur(3px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.modalBox {
+  background: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 860px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modalBoxSm {
+  max-width: 400px;
+}
+.modalBoxXs {
+  max-width: 380px;
+}
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.modalTitle {
+  font-weight: 600;
+  font-size: var(--text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+.modalBody {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;        /* ← było: center */
+  justify-content: flex-start; /* ← było: center */
+}
+.modalFooter {
+  padding: 1.25rem 1.5rem;
+}
+.modalText {
+  margin-bottom: 0.75rem;
+  color: var(--color-text);
+  text-align: left; /* ← dodaj, żeby nie dziedziczyć center z zewnątrz */
+}
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.newFolderBody {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── Preview ─────────────────────────────────────────────────────────────── */
+.previewImg {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.previewVideo {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+}
+.previewIframe {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  border-radius: 4px;
+}
+.previewText {
+  width: 100%;
+  max-height: 70vh;
+  overflow: auto;
+  font-family: monospace;
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: var(--color-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  line-height: 1.6;
+  color: var(--color-text);
+  text-align: left; /* ← TO DODAJ */
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms;
+}
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  background: var(--color-surface-offset);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms;
+}
+.btnDanger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  background: var(--color-error);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms;
+}
+.iconBtn {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  transition: background 120ms;
+}
+
+/* ─── Input ───────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  outline: none;
+}
+
+/* ─── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  pointer-events: none;
+}
+.toastSuccess {
+  background: var(--color-primary);
+}
+.toastError {
+  background: var(--color-error);
+}
+
+/* ─── Error text ──────────────────────────────────────────────────────────── */
+.errorText {
+  color: var(--color-error);
+  font-size: var(--text-xs);
+}
+.textMuted {
+  color: var(--color-text-muted);
+}
+.textFaint {
+  color: var(--color-text-faint);
+  font-size: var(--text-sm);
+  margin-top: 4px;
+}
