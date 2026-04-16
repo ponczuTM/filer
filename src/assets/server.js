@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = 3001;
 const FILES_DIR = path.join(__dirname, 'files');
+const NOTE_FILENAME = '.filer_note';
 
 if (!fs.existsSync(FILES_DIR)) fs.mkdirSync(FILES_DIR, { recursive: true });
 
@@ -23,102 +24,71 @@ function resolveSafePath(relPath = '') {
 }
 
 function readDirEntries(dirPath) {
-  return fs.readdirSync(dirPath).map(name => {
-    const full = path.join(dirPath, name);
-    const stat = fs.statSync(full);
-    return {
-      name,
-      isDirectory: stat.isDirectory(),
-      size: stat.isDirectory() ? null : stat.size,
-      modified: stat.mtime.toISOString(),
-    };
-  }).sort((a, b) => {
-    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
+  return fs.readdirSync(dirPath)
+    .filter(name => name !== NOTE_FILENAME) // ukryj plik notatki
+    .map(name => {
+      const full = path.join(dirPath, name);
+      const stat = fs.statSync(full);
+      return {
+        name,
+        isDirectory: stat.isDirectory(),
+        size: stat.isDirectory() ? null : stat.size,
+        modified: stat.mtime.toISOString(),
+      };
+    }).sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
 }
 
 // ============= ENDPOINTY Z REGEXP =============
 
-// Pobieranie pliku
 app.get(/^\/api\/download\/(.+)$/, (req, res) => {
   try {
     const filename = req.params[0];
     const filePath = resolveSafePath(filename);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-    
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
     const stats = fs.statSync(filePath);
-    if (stats.isDirectory()) {
-      return res.status(400).json({ error: 'Cannot download directory, use /api/download-zip/...' });
-    }
-    
+    if (stats.isDirectory()) return res.status(400).json({ error: 'Cannot download directory, use /api/download-zip/...' });
     res.download(filePath, path.basename(filePath));
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// Pobieranie katalogu jako ZIP
 app.get(/^\/api\/download-zip\/(.+)$/, (req, res) => {
   try {
     const dirname = req.params[0];
     const dirPath = resolveSafePath(dirname);
-    
-    if (!fs.existsSync(dirPath)) {
-      return res.status(404).json({ error: 'Directory not found' });
-    }
-    
+    if (!fs.existsSync(dirPath)) return res.status(404).json({ error: 'Directory not found' });
     const stats = fs.statSync(dirPath);
-    if (!stats.isDirectory()) {
-      return res.status(400).json({ error: 'Not a directory' });
-    }
-    
+    if (!stats.isDirectory()) return res.status(400).json({ error: 'Not a directory' });
     const archive = archiver('zip', { zlib: { level: 6 } });
     const zipName = `${path.basename(dirname)}.zip`;
-    
     res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
     res.setHeader('Content-Type', 'application/zip');
-    
     archive.pipe(res);
     archive.directory(dirPath, path.basename(dirname));
     archive.finalize();
-    
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// Uniwersalny endpoint - automatyczne wykrywanie typu
 app.get(/^\/api\/get\/(.+)$/, (req, res) => {
   try {
     const resourcePath = req.params[0];
     const fullPath = resolveSafePath(resourcePath);
-    
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-    
+    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Resource not found' });
     const stats = fs.statSync(fullPath);
-    
     if (stats.isDirectory()) {
       const archive = archiver('zip', { zlib: { level: 6 } });
       const zipName = `${path.basename(resourcePath)}.zip`;
-      
       res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
       res.setHeader('Content-Type', 'application/zip');
-      
       archive.pipe(res);
       archive.directory(fullPath, path.basename(resourcePath));
       archive.finalize();
     } else {
       res.download(fullPath, path.basename(resourcePath));
     }
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // ============= POZOSTAŁE ENDPOINTY =============
@@ -129,9 +99,7 @@ app.get('/api/files', (req, res) => {
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory())
       return res.status(404).json({ error: 'Directory not found' });
     res.json(readDirEntries(dir));
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.get('/api/file', (req, res) => {
@@ -140,9 +108,7 @@ app.get('/api/file', (req, res) => {
     if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory())
       return res.status(404).json({ error: 'File not found' });
     res.download(filePath);
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.get('/api/preview', (req, res) => {
@@ -152,9 +118,7 @@ app.get('/api/preview', (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     res.setHeader('Content-Disposition', 'inline');
     res.sendFile(filePath);
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.post('/api/download-zip', (req, res) => {
@@ -174,10 +138,35 @@ app.post('/api/download-zip', (req, res) => {
       else archive.file(full, { name });
     }
     archive.finalize();
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
+
+// ============= NOTATKI =============
+
+app.get('/api/note', (req, res) => {
+  try {
+    const dirPath = resolveSafePath(req.query.path || '');
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory())
+      return res.status(404).json({ error: 'Directory not found' });
+    const notePath = path.join(dirPath, NOTE_FILENAME);
+    const content = fs.existsSync(notePath) ? fs.readFileSync(notePath, 'utf8') : '';
+    res.json({ content });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.post('/api/note', (req, res) => {
+  try {
+    const { path: relPath = '', content = '' } = req.body;
+    const dirPath = resolveSafePath(relPath);
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory())
+      return res.status(404).json({ error: 'Directory not found' });
+    const notePath = path.join(dirPath, NOTE_FILENAME);
+    fs.writeFileSync(notePath, content, 'utf8');
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ============= UPLOAD =============
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -190,9 +179,7 @@ const storage = multer.diskStorage({
       cb(null, targetDir);
     } catch (e) { cb(e); }
   },
-  filename: (req, file, cb) => {
-    cb(null, path.basename(file.originalname));
-  },
+  filename: (req, file, cb) => { cb(null, path.basename(file.originalname)); },
 });
 const upload = multer({ storage });
 
@@ -206,9 +193,7 @@ app.post('/api/mkdir', (req, res) => {
     const full = resolveSafePath(relPath);
     fs.mkdirSync(full, { recursive: true });
     res.json({ ok: true });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.delete('/api/delete', (req, res) => {
@@ -221,9 +206,7 @@ app.delete('/api/delete', (req, res) => {
       fs.rmSync(full, { recursive: true, force: true });
     }
     res.json({ ok: true });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.listen(PORT, () => console.log(`FileCloud backend running on http://localhost:${PORT}`));

@@ -601,3 +601,60 @@
     transition-duration: 0.01ms !important;
   }
 }
+/* ─── Note Panel ─────────────────────────────────── */
+.notePanel {
+  margin: 0 24px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.notePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-raised, var(--color-surface));
+}
+
+.notePanelTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.noteSaveStatus {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  transition: color 0.2s;
+}
+
+.noteSaveStatus[data-status='saving'] { color: var(--color-text-muted); }
+.noteSaveStatus[data-status='saved']  { color: var(--color-success, #4ade80); }
+.noteSaveStatus[data-status='error']  { color: var(--color-danger, #f87171); }
+
+.noteTextarea {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+  max-height: 320px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+  font-size: var(--text-sm, 13px);
+  line-height: 1.6;
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+.noteTextarea::placeholder {
+  color: var(--color-text-faint);
+}

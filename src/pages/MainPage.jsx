@@ -105,9 +105,77 @@ const Icon = ({ name, size = 16 }) => {
     home:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
     chevron:    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
     check:      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
+    note:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   };
   return icons[name] ?? icons.other;
 };
+
+// ─── Note Panel ───────────────────────────────────────────────────────────────
+function NotePanel({ currentPath }) {
+  const [content, setContent] = useState('');
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
+  const debounceRef = useRef(null);
+  const initialLoadRef = useRef(false);
+
+  useEffect(() => {
+    initialLoadRef.current = false;
+    setSaveStatus('idle');
+    fetch(API + '/note?path=' + encodeURIComponent(currentPath))
+      .then(r => r.json())
+      .then(data => {
+        setContent(data.content ?? '');
+        initialLoadRef.current = true;
+      })
+      .catch(() => {
+        setContent('');
+        initialLoadRef.current = true;
+      });
+  }, [currentPath]);
+
+  function handleChange(e) {
+    const val = e.target.value;
+    setContent(val);
+    if (!initialLoadRef.current) return;
+    setSaveStatus('saving');
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(API + '/note', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: currentPath, content: val }),
+        });
+        setSaveStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch {
+        setSaveStatus('error');
+      }
+    }, 800);
+  }
+
+  return (
+    <div className={s.notePanel}>
+      <div className={s.notePanelHeader}>
+        <span className={s.notePanelTitle}>
+          <Icon name="note" size={14} />
+          Notatka katalogu
+        </span>
+        <span className={s.noteSaveStatus} data-status={saveStatus}>
+          {saveStatus === 'saving' && 'Zapisywanie…'}
+          {saveStatus === 'saved'  && '✓ Zapisano'}
+          {saveStatus === 'error'  && '✗ Błąd zapisu'}
+        </span>
+      </div>
+      <textarea
+        className={s.noteTextarea}
+        placeholder="Wpisz notatki, komendy, opisy… (autosave)"
+        value={content}
+        onChange={handleChange}
+        spellCheck={false}
+      />
+    </div>
+  );
+}
 
 function PreviewModal({ file, filePath, onClose }) {
   const type = getFileType(file.name);
@@ -212,8 +280,7 @@ function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, on
 
   function handleDragEnter(e) {
     if (!entry.isDirectory) return;
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     dragCounter.current++;
     setTileDragOver(true);
   }
@@ -225,13 +292,11 @@ function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, on
   }
   function handleDragOver(e) {
     if (!entry.isDirectory) return;
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
   }
   async function handleDrop(e) {
     if (!entry.isDirectory) return;
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     dragCounter.current = 0;
     setTileDragOver(false);
     onDrop(e, entry.name);
@@ -245,7 +310,6 @@ function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, on
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Selection checkbox overlay */}
       <button
         className={`${s.tileCheckbox} ${isSelected ? s.tileCheckboxActive : ''}`}
         onClick={e => { e.stopPropagation(); onSelect(entry.name); }}
@@ -254,7 +318,6 @@ function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, on
         {isSelected && <Icon name="check" size={12} />}
       </button>
 
-      {/* Clickable main area */}
       <div
         className={s.tileMain}
         onClick={() => entry.isDirectory ? onNavigate(entry.name) : null}
@@ -263,9 +326,7 @@ function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, on
         <div className={s.tileIcon} style={{ color: entry.isDirectory ? 'var(--color-gold)' : 'var(--color-text-muted)' }}>
           <Icon name={fileType} size={36} />
         </div>
-        <div className={s.tileName} title={entry.name}>
-          {entry.name}
-        </div>
+        <div className={s.tileName} title={entry.name}>{entry.name}</div>
         <div className={s.tileMeta}>
           {!entry.isDirectory && <span>{formatSize(entry.size)}</span>}
           {entry.isDirectory && <span className={s.tileTypeLabel}>Katalog</span>}
@@ -273,7 +334,6 @@ function Tile({ entry, filePath, isSelected, onSelect, onNavigate, onPreview, on
         <div className={s.tileDate}>{formatDate(entry.modified)}</div>
       </div>
 
-      {/* Action buttons */}
       <div className={s.tileActions}>
         {!entry.isDirectory && isPreviewable(entry.name) && (
           <button className={s.tileBtn} title="Podgląd" onClick={e => { e.stopPropagation(); onPreview({ file: entry, filePath }); }}>
@@ -346,7 +406,6 @@ export default function MainPage() {
   const allSelected = entries.length > 0 && selected.size === entries.length;
   const noneSelected = selected.size === 0;
 
-  // Upload to a specific sub-directory (for tile drop)
   async function uploadFilesToPath(fileList, targetPath) {
     if (!fileList.length) return;
     const form = new FormData();
@@ -374,7 +433,6 @@ export default function MainPage() {
     e.target.value = '';
   }
 
-  // Global drag-over overlay (outside tiles)
   function handleDragEnter(e) {
     e.preventDefault();
     dragCounter.current++;
@@ -398,7 +456,6 @@ export default function MainPage() {
     await uploadFiles(files);
   }
 
-  // Drop directly onto a folder tile
   async function handleTileDrop(e, folderName) {
     const targetPath = currentPath ? currentPath + '/' + folderName : folderName;
     dragCounter.current = 0;
@@ -585,7 +642,6 @@ export default function MainPage() {
         ))}
       </div>
 
-      {/* Selection bar */}
       <div className={s.selectionBar}>
         <div className={s.selectionBarLeft}>
           <button className={allSelected ? s.btnPrimary : s.btnSecondary} onClick={selectAll} disabled={entries.length === 0}>
@@ -616,7 +672,6 @@ export default function MainPage() {
         </div>
       </div>
 
-      {/* Tile grid */}
       <div className={s.gridWrapper}>
         {loading ? (
           <div className={s.tileGrid}>
@@ -658,6 +713,9 @@ export default function MainPage() {
           </div>
         )}
       </div>
+
+      {/* Notatka katalogu - zawsze widoczna pod gridem */}
+      <NotePanel currentPath={currentPath} />
 
       {preview && <PreviewModal file={preview.file} filePath={preview.filePath} onClose={() => setPreview(null)} />}
       {confirmDelete && <ConfirmModal items={confirmDelete} onConfirm={confirmDeleteItems} onCancel={() => setConfirmDelete(null)} />}
