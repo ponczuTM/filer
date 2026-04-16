@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import s from './MainPage.module.css';
 
-const API = 'http://localhost:3001/api';
+const API = 'http://192.168.68.187:3001/api';
 
 const BUNDLE_EXTS = new Set([
   'app', 'framework', 'bundle', 'plugin', 'kext',

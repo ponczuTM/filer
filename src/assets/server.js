@@ -38,6 +38,91 @@ function readDirEntries(dirPath) {
   });
 }
 
+// ============= ENDPOINTY Z REGEXP =============
+
+// Pobieranie pliku
+app.get(/^\/api\/download\/(.+)$/, (req, res) => {
+  try {
+    const filename = req.params[0];
+    const filePath = resolveSafePath(filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    const stats = fs.statSync(filePath);
+    if (stats.isDirectory()) {
+      return res.status(400).json({ error: 'Cannot download directory, use /api/download-zip/...' });
+    }
+    
+    res.download(filePath, path.basename(filePath));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Pobieranie katalogu jako ZIP
+app.get(/^\/api\/download-zip\/(.+)$/, (req, res) => {
+  try {
+    const dirname = req.params[0];
+    const dirPath = resolveSafePath(dirname);
+    
+    if (!fs.existsSync(dirPath)) {
+      return res.status(404).json({ error: 'Directory not found' });
+    }
+    
+    const stats = fs.statSync(dirPath);
+    if (!stats.isDirectory()) {
+      return res.status(400).json({ error: 'Not a directory' });
+    }
+    
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    const zipName = `${path.basename(dirname)}.zip`;
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+    res.setHeader('Content-Type', 'application/zip');
+    
+    archive.pipe(res);
+    archive.directory(dirPath, path.basename(dirname));
+    archive.finalize();
+    
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Uniwersalny endpoint - automatyczne wykrywanie typu
+app.get(/^\/api\/get\/(.+)$/, (req, res) => {
+  try {
+    const resourcePath = req.params[0];
+    const fullPath = resolveSafePath(resourcePath);
+    
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+    
+    const stats = fs.statSync(fullPath);
+    
+    if (stats.isDirectory()) {
+      const archive = archiver('zip', { zlib: { level: 6 } });
+      const zipName = `${path.basename(resourcePath)}.zip`;
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+      res.setHeader('Content-Type', 'application/zip');
+      
+      archive.pipe(res);
+      archive.directory(fullPath, path.basename(resourcePath));
+      archive.finalize();
+    } else {
+      res.download(fullPath, path.basename(resourcePath));
+    }
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// ============= POZOSTAŁE ENDPOINTY =============
+
 app.get('/api/files', (req, res) => {
   try {
     const dir = resolveSafePath(req.query.path || '');
