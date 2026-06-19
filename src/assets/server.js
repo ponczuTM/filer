@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3001;
+const PORT = 9876;
 const FILES_DIR = path.join(__dirname, 'files');
 const NOTE_FILENAME = '.filer_note';
 
