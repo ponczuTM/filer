@@ -164,6 +164,32 @@ async function apiFetch(url, options = {}) {
   return parseResponse(response);
 }
 
+async function copyToClipboard(text) {
+  if (!text) return false;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const textarea = document.createElement('textarea');
+
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const copied = document.execCommand('copy');
+
+    textarea.remove();
+
+    return copied;
+  }
+}
+
 let jsZipModule = null;
 
 async function getJSZip() {
@@ -296,7 +322,7 @@ function Icon({ name, size = 16 }) {
     ),
     download: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4" />
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
         <polyline points="7 10 12 15 17 10" />
         <line x1="12" y1="15" x2="12" y2="3" />
       </svg>
@@ -310,7 +336,7 @@ function Icon({ name, size = 16 }) {
     plus: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
     ),
     folder_plus: (
@@ -468,15 +494,19 @@ function UploadStatus({ uploadState, onCancel }) {
 function NotePanel({ currentPath, onError, onSuccess }) {
   const [content, setContent] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
+  const [copied, setCopied] = useState(false);
   const debounceRef = useRef(null);
   const initialLoadRef = useRef(false);
+  const copyTimeoutRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
 
     initialLoadRef.current = false;
     setSaveStatus('idle');
+    setCopied(false);
     clearTimeout(debounceRef.current);
+    clearTimeout(copyTimeoutRef.current);
 
     apiFetch(`${API}/note?path=${encodeURIComponent(currentPath)}`)
       .then(data => {
@@ -497,6 +527,7 @@ function NotePanel({ currentPath, onError, onSuccess }) {
     return () => {
       cancelled = true;
       clearTimeout(debounceRef.current);
+      clearTimeout(copyTimeoutRef.current);
     };
   }, [currentPath, onError]);
 
@@ -536,6 +567,22 @@ function NotePanel({ currentPath, onError, onSuccess }) {
     }, 800);
   }
 
+  async function handleCopy() {
+    const success = await copyToClipboard(content);
+
+    if (!success) {
+      onError('Nie udało się skopiować treści.');
+      return;
+    }
+
+    clearTimeout(copyTimeoutRef.current);
+    setCopied(true);
+
+    copyTimeoutRef.current = window.setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  }
+
   return (
     <div className={s.notePanel}>
       <div className={s.notePanelHeader}>
@@ -551,13 +598,25 @@ function NotePanel({ currentPath, onError, onSuccess }) {
         </span>
       </div>
 
-      <textarea
-        className={s.noteTextarea}
-        placeholder="Wpisz notatki, komendy, opisy… (autosave)"
-        value={content}
-        onChange={handleChange}
-        spellCheck={false}
-      />
+      <div className={s.noteFieldRow}>
+        <textarea
+          className={s.noteTextarea}
+          placeholder="Wpisz notatki, komendy, opisy… (autosave)"
+          value={content}
+          onChange={handleChange}
+          spellCheck={false}
+        />
+
+        <button
+          type="button"
+          className={`${s.copyBtn} ${copied ? s.copyBtnCopied : ''}`}
+          onClick={handleCopy}
+          disabled={!content.trim()}
+          aria-live="polite"
+        >
+          {copied ? 'Skopiowano' : 'Kopiuj'}
+        </button>
+      </div>
     </div>
   );
 }
